@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data.dart';
+import '../services/api_service.dart';
 
 class LocationsScreen extends StatefulWidget {
   const LocationsScreen({super.key});
@@ -14,11 +15,15 @@ class _LocationsScreenState extends State<LocationsScreen> with SingleTickerProv
   late TabController _tab;
   String _query = '';
   bool _asc = true;
+  final _api = ApiService();
+  bool _loading = true;
+  List<LocationItem> _items = [];
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 3, vsync: this);
+  _loadCards();
   }
 
   @override
@@ -28,7 +33,7 @@ class _LocationsScreenState extends State<LocationsScreen> with SingleTickerProv
   }
 
   List<LocationItem> _filtered() {
-    Iterable<LocationItem> data = demoLocations;
+  Iterable<LocationItem> data = _items.isNotEmpty ? _items : demoLocations;
     // tab filter
     if (_tab.index == 1) {
       data = data.where((e) => e.status == Status.offline);
@@ -43,6 +48,25 @@ class _LocationsScreenState extends State<LocationsScreen> with SingleTickerProv
     final list = data.toList()
       ..sort((a, b) => _asc ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
     return list;
+  }
+
+  Future<void> _loadCards() async {
+    setState((){ _loading = true; });
+    try {
+      final cards = await _api.fetchLocationCards();
+      // map LocationCard -> LocationItem
+      final mapped = cards.map((c) {
+        final stationsCount = c.stationsInfo.length;
+        final online = c.stationsInfo.any((s) => s.currentOnlineStatus == 1);
+        final name = c.address.isNotEmpty ? c.address : c.locationId;
+        return LocationItem(name: name, stations: stationsCount, status: online ? Status.online : Status.offline);
+      }).toList();
+      setState((){ _items = mapped; });
+    } catch (e) {
+      // keep demo data
+    } finally {
+      setState((){ _loading = false; });
+    }
   }
 
   @override
@@ -120,15 +144,17 @@ class _LocationsScreenState extends State<LocationsScreen> with SingleTickerProv
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              itemCount: _filtered().length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final item = _filtered()[i];
-                return _LocationTile(item: item);
-              },
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    itemCount: _filtered().length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final item = _filtered()[i];
+                      return _LocationTile(item: item);
+                    },
+                  ),
           ),
         ],
       ),

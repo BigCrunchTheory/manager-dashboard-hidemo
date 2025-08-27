@@ -3,14 +3,52 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../data.dart';
+import '../services/api_service.dart';
 import 'locations_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final _api = ApiService();
+  bool _loading = true;
+  int _percentOnline = 0;
+  int _totalLocations = 0;
+  String _filterLabel = 'All time';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    setState(() { _loading = true; });
+    try {
+      final s = await _api.fetchSummary(preset: 'ALL_TIME');
+      setState((){
+        _percentOnline = s.averageLocationOnline;
+        _totalLocations = s.totalLocationsCount;
+        _filterLabel = 'All time';
+      });
+    } catch (e) {
+      // keep demo fallback
+      setState((){
+        _percentOnline = (onlineShare(demoLocations) * 100).round();
+        _totalLocations = demoLocations.length;
+      });
+    } finally {
+      setState((){ _loading = false; });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final percentOnline = (onlineShare(demoLocations) * 100).round();
+    final percentOnline = _percentOnline;
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -18,36 +56,38 @@ class DashboardScreen extends StatelessWidget {
         centerTitle: true,
         title: const Text('Manager Dashboard'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        children: [
-          const SizedBox(height: 8),
-          _SectionTitleWithFilter(
-            title: 'Summary',
-            trailing: _FilterPill(label: 'All time'),
-          ),
-          const SizedBox(height: 8),
-          _SummaryCard(percentOnline: percentOnline),
-          const SizedBox(height: 24),
-          const _SectionTitle(title: 'Locations'),
-          const SizedBox(height: 8),
-          _NavCard(
-            title: 'Total locations',
-            value: demoLocations.length.toString(),
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocationsScreen()));
-            },
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: TextButton(
-              onPressed: () {},
-              child: const Text('Logout', style: TextStyle(decoration: TextDecoration.underline)),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              children: [
+                const SizedBox(height: 8),
+                _SectionTitleWithFilter(
+                  title: 'Summary',
+                  trailing: _FilterPill(label: _filterLabel),
+                ),
+                const SizedBox(height: 8),
+                _SummaryCard(percentOnline: percentOnline),
+                const SizedBox(height: 24),
+                const _SectionTitle(title: 'Locations'),
+                const SizedBox(height: 8),
+                _NavCard(
+                  title: 'Total locations',
+                  value: _totalLocations.toString(),
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocationsScreen()));
+                  },
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('Logout', style: TextStyle(decoration: TextDecoration.underline)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
     );
   }
 }
