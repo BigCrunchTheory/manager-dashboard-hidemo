@@ -1,16 +1,9 @@
-# manager_app
+# Manager Dashboard HiDemo
 
-A new Flutter project.
+*Manager Dashboard HiDemo* — это веб-приложение для управления и визуализации данных с удобным интерфейсом. Репозиторий содержит исходный код и ресурсы для запуска панели управления в среде HiDemo.
 
-## Getting Started
+## Возможности
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Просмотр и управление ключевыми метриками
+- Интерактивные графики и таблицы
+- Фильтрация и сортировка данных
